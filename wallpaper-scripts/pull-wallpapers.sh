@@ -1,15 +1,7 @@
 #!/bin/bash
 
-git config set advice.defaultBranchName false
-
 # Load config
-CONFIG_FILE="$HOME/.wallpaper_config"
-if [[ -f "$CONFIG_FILE" ]]; then
-  source "$CONFIG_FILE"
-else
-  echo "❌ Config file not found: $CONFIG_FILE"
-  exit 1
-fi
+source "$HOME/.config/my-wallpapers/_load_config.sh"
 
 # Create the main wallpaper directory if missing
 mkdir -p "$WALLPAPER_DIR"
