@@ -20,3 +20,5 @@ fi
 echo "$current_image" >> "$BLACKLIST_FILE"
 echo "🚫 Blacklisted wallpaper:"
 echo "$current_image"
+
+"$WALLPAPER_SCRIPTS_DIR"/set-random-wallpaper.sh
