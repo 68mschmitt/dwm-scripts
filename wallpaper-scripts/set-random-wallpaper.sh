@@ -1,17 +1,26 @@
 #!/bin/bash
 
-# Load config
 source "$HOME/.config/my-wallpapers/_load_config.sh"
 
-# Read blacklist into array
-mapfile -t BLACKLIST < <(sed '/^\s*#/d;/^\s*$/d' "$BLACKLIST_FILE" 2>/dev/null)
+# Read blacklist into array (if it exists)
+BLACKLIST=()
+if [[ -f "$BLACKLIST_FILE" ]]; then
+  while IFS= read -r line; do
+    # Skip empty lines and comments
+    [[ "$line" =~ ^\s*$ || "$line" =~ ^\s*# ]] && continue
+    BLACKLIST+=("$line")
+  done < "$BLACKLIST_FILE"
+fi
 
-# Gather all images
-mapfile -t all_images < <(find "$WALLPAPER_DIR" -type f \( \
+# Collect all image paths
+all_images=()
+while IFS= read -r -d '' file; do
+  all_images+=("$file")
+done < <(find "$WALLPAPER_DIR" -type f \( \
   -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o \
-  -iname '*.bmp' -o -iname '*.webp' \))
+  -iname '*.bmp' -o -iname '*.webp' \) -print0)
 
-# Filter out blacklisted entries
+# Filter blacklisted images
 images=()
 for img in "${all_images[@]}"; do
   skip=false
@@ -21,17 +30,31 @@ for img in "${all_images[@]}"; do
   $skip || images+=("$img")
 done
 
-# Abort if no valid images
+# Abort if no usable images
 if [[ ${#images[@]} -eq 0 ]]; then
-  echo "❌ No usable images found. (All are blacklisted?)"
+  echo "❌ No usable images found. (All may be blacklisted)"
   exit 1
 fi
 
-# Pick and set wallpaper
+# Pick random image
 random_image="${images[RANDOM % ${#images[@]}]}"
-feh --bg-scale "$random_image"
 
-# Record for possible blacklisting
+# ✅ Detect platform and set wallpaper
+uname_out="$(uname)"
+case "$uname_out" in
+  Darwin)
+    osascript -e "tell application \"Finder\" to set desktop picture to POSIX file \"$random_image\""
+    ;;
+  Linux)
+    feh --bg-scale "$random_image"
+    ;;
+  *)
+    echo "❌ Unsupported OS: $uname_out"
+    exit 1
+    ;;
+esac
+
+# Save to current wallpaper tracker
 mkdir -p "$CONFIG_DIR"
 echo "$random_image" > "$CURRENT_FILE"
 
